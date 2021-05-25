@@ -2,6 +2,8 @@ package viewer;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.io.File;
 import java.sql.*;
 import java.util.Vector;
 
@@ -42,41 +44,54 @@ public class SQLiteViewer extends JFrame {
         openButton.setName("OpenFileButton");
         add(openButton);
 
-
         // combo box properties (holds list of tables)
         tableComboBox.setBounds(20, 50, 660, 20);
         tableComboBox.setName("TablesComboBox");
+        tableComboBox.setEnabled(true);
         add(tableComboBox);
 
         // text area for queries properties
         queryText.setBounds(20, 90, 660, 200);
         queryText.setName("QueryTextArea");
+        queryText.setEnabled(false);
         add(queryText);
 
         // execute button properties
         executeButton.setBounds(580, 310, 100, 20);
         executeButton.setName("ExecuteQueryButton");
+        executeButton.setEnabled(false);
         add(executeButton);
 
         // table properties
         table.setName("Table");
         scrollPane.setBounds(20, 350, 660, 400);
+        scrollPane.setEnabled(true);
         add(scrollPane);
 
         openButton.addActionListener(e -> {
             Connection conn;
             tableComboBox.removeAllItems();
-            try {
-                String url = "jdbc:sqlite:" + filename.getText().trim();
-                conn = DriverManager.getConnection(url);
-                Statement statement = conn.createStatement();
-                ResultSet resultSet =
-                        statement.executeQuery("SELECT name FROM sqlite_master WHERE type ='table' AND name NOT LIKE 'sqlite_%';");
-                while (resultSet.next()) {
-                    tableComboBox.addItem(resultSet.getString("name"));
+            String name = filename.getText().trim();
+            if (new File(name).exists()) {
+                try {
+                    String url = "jdbc:sqlite:" + name;
+                    conn = DriverManager.getConnection(url);
+                    Statement statement = conn.createStatement();
+                    ResultSet resultSet =
+                            statement.executeQuery("SELECT name FROM sqlite_master WHERE type ='table' AND name NOT LIKE 'sqlite_%';");
+                    while (resultSet.next()) {
+                        tableComboBox.addItem(resultSet.getString("name"));
+                    }
+                    tableComboBox.setEnabled(true);
+                    queryText.setEnabled(true);
+                    executeButton.setEnabled(true);
+                } catch (SQLException exception) {
+                    exception.printStackTrace();
                 }
-            } catch (SQLException exception) {
-                exception.printStackTrace();
+            } else {
+                JOptionPane.showMessageDialog(new Frame(), "File doesn't exist!");
+                queryText.setEnabled(false);
+                executeButton.setEnabled(false);
             }
         });
 
@@ -112,6 +127,7 @@ public class SQLiteViewer extends JFrame {
                     tableData.add(rowData);
                 }
             } catch (SQLException exception) {
+                JOptionPane.showMessageDialog(new Frame(), "Invalid SQL query!");
                 exception.printStackTrace();
             }
         });
